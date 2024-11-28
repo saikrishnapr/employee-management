@@ -1,25 +1,76 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
+import UserDashboard from './pages/UserDashboard';
+import { jwtDecode } from 'jwt-decode';
 
-function App() {
+// Utility function to check authentication and roles
+const getAuthToken = () => localStorage.getItem('authToken');
+const getRoleFromToken = () => {
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const decoded = jwtDecode(token);
+    return decoded.role; // Assumes the token has a "role" field
+  } catch (error) {
+    return null;
+  }
+};
+
+const App = () => {
+  const isAuthenticated = !!getAuthToken();
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Navbar />
+      <Routes>
+        {/* Login Route */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              getRoleFromToken() === 'admin' ? (
+                <Navigate to="/admin" />
+              ) : (
+                <Navigate to="/user" />
+              )
+            ) : (
+              <Login />
+            )
+          }
+        />
+
+        {/* Admin Dashboard Route */}
+        <Route
+          path="/admin"
+          element={
+            isAuthenticated && getRoleFromToken() === 'admin' ? (
+              <AdminDashboard />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+
+        {/* User Dashboard Route */}
+        <Route
+          path="/user"
+          element={
+            isAuthenticated && getRoleFromToken() === 'user' ? (
+              <UserDashboard />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+
+        {/* Catch-all Route for 404 */}
+        <Route path="*" element={<h1>404 - Page Not Found</h1>} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
